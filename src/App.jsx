@@ -1,4 +1,4 @@
-
+import QueueDashboard from "./components/QueueDashboard";
 import { useState } from "react";
 import "./index.css";
 import JoinQueue from "./pages/JoinQueue";
@@ -6,7 +6,14 @@ import JoinQueue from "./pages/JoinQueue";
 function App() {
   const [joined, setJoined] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
-  if (showJoin) {
+  const [showDashboard, setShowDashboard] = useState(false);
+  if (showDashboard) {
+  return (
+    <QueueDashboard onBack={() => setShowDashboard(false)} />
+  );
+}
+
+if (showJoin) {
   return <JoinQueue onBack={() => setShowJoin(false)} />;
 }
 
@@ -25,6 +32,12 @@ function App() {
 
         <button onClick={() => setShowJoin(true)}>
   Join a queue
+</button>
+<button
+  className="nav-button"
+  onClick={() => setShowDashboard(true)}
+>
+  Live dashboard <span>↗</span>
 </button>
       </nav>
 
