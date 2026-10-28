@@ -8,6 +8,8 @@ export default function QueueDashboard({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState(null);
+  const [selectedService, setSelectedService] = useState("all");
+const [selectedLocation, setSelectedLocation] = useState("all");
 
   const loadTokens = useCallback(async () => {
     try {
@@ -61,9 +63,24 @@ export default function QueueDashboard({ onBack }) {
     }
   }
 
-  const waiting = tokens.filter(token => token.status === "waiting");
-  const called = tokens.filter(token => token.status === "called");
-  const completed = tokens.filter(token => token.status === "completed");
+  
+const serviceOptions = [...new Set(
+  tokens.map(token => token.serviceName).filter(Boolean)
+)].sort();
+
+const locationOptions = [...new Set(
+  tokens.map(token => token.location).filter(Boolean)
+)].sort();
+
+const filteredTokens = tokens.filter(token =>
+  (selectedService === "all" || token.serviceName === selectedService) &&
+  (selectedLocation === "all" || token.location === selectedLocation)
+);
+
+const waiting = filteredTokens.filter(token => token.status === "waiting");
+const called = filteredTokens.filter(token => token.status === "called");
+const completed = filteredTokens.filter(token => token.status === "completed");
+
 
   async function callNext() {
     if (!waiting.length) return;
@@ -124,6 +141,46 @@ export default function QueueDashboard({ onBack }) {
           </button>
         </div>
 
+
+<div className="dashboard-filters">
+  <label>
+    <span>Service</span>
+    <select
+      value={selectedService}
+      onChange={event => setSelectedService(event.target.value)}
+    >
+      <option value="all">All services</option>
+      {serviceOptions.map(service => (
+        <option key={service} value={service}>{service}</option>
+      ))}
+    </select>
+  </label>
+
+  <label>
+    <span>Location</span>
+    <select
+      value={selectedLocation}
+      onChange={event => setSelectedLocation(event.target.value)}
+    >
+      <option value="all">All locations</option>
+      {locationOptions.map(location => (
+        <option key={location} value={location}>{location}</option>
+      ))}
+    </select>
+  </label>
+
+  <button
+    className="dashboard-action"
+    onClick={() => {
+      setSelectedService("all");
+      setSelectedLocation("all");
+    }}
+  >
+    Reset filters
+  </button>
+</div>
+
+
         {error && <p className="form-error">{error}</p>}
         {loading && <p className="dashboard-message">Loading queue...</p>}
 
@@ -132,8 +189,13 @@ export default function QueueDashboard({ onBack }) {
             No tokens yet. Join a queue to see tokens here.
           </p>
         )}
+        {!loading && !error && tokens.length > 0 && filteredTokens.length === 0 && (
+  <p className="dashboard-message">
+    No tokens match these filters. Try another service or location.
+  </p>
+)}
 
-        {!loading && tokens.length > 0 && (
+        {!loading && filteredTokens.length > 0 && (
           <div className="dashboard-table-wrap">
             <table className="dashboard-table">
               <thead>
@@ -149,7 +211,7 @@ export default function QueueDashboard({ onBack }) {
                 </tr>
               </thead>
               <tbody>
-                {[...tokens]
+                {[...filteredTokens]
                   .sort(
                     (a, b) =>
                       new Date(a.createdAt) - new Date(b.createdAt) ||

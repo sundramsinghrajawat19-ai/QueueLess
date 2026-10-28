@@ -1149,3 +1149,63 @@ footer p, footer > span { color: #817b91; font-size: 10px; margin: 0; }
     transition: none !important;
   }
 }
+
+
+/* QueueLess dashboard filters */
+.dashboard-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 22px;
+  padding: 18px;
+  border: 1px solid #30283f;
+  border-radius: 14px;
+  background: rgba(18, 16, 27, .85);
+}
+
+.dashboard-filters label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.dashboard-filters label span {
+  color: #a6a0ba;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.dashboard-filters select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  color: #e6ddff;
+  background: #191523;
+  border: 1px solid #493765;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.dashboard-filters select:focus {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+@media (max-width: 650px) {
+  .dashboard-filters {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .dashboard-filters label {
+    min-width: 0;
+  }
+}
+
