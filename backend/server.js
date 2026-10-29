@@ -130,10 +130,18 @@ app.post("/api/tokens", async (req, res) => {
   }
 });
 
-// Get all tokens
+
+ // Get queue information without exposing customer names
+
 app.get("/api/tokens", async (req, res) => {
   try {
-    const tokens = await Token.find().sort({ id: 1 }).lean();
+    const tokens = await Token.find()
+      .select(
+        "id tokenNumber location serviceId serviceName peopleAhead estimatedWait status createdAt"
+      )
+      .sort({ id: 1 })
+      .lean();
+
     res.json({ success: true, tokens });
   } catch (error) {
     console.error("Fetching tokens failed:", error.message);
@@ -143,6 +151,7 @@ app.get("/api/tokens", async (req, res) => {
     });
   }
 });
+
 
 /* Find one token for customer tracking */
 app.get("/api/tokens/track/:tokenNumber", async (req, res) => {

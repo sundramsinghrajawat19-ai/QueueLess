@@ -1,15 +1,31 @@
+
 import QueueDashboard from "./components/QueueDashboard";
 import { useState } from "react";
 import "./index.css";
 import JoinQueue from "./pages/JoinQueue";
+import TrackToken from "./pages/TrackToken";
+import LiveQueueBoard from "./pages/LiveQueueBoard";
 
 function App() {
   const [joined, setJoined] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showTrackToken, setShowTrackToken] = useState(false);
+  const [showLiveQueue, setShowLiveQueue] = useState(false);
   if (showDashboard) {
   return (
     <QueueDashboard onBack={() => setShowDashboard(false)} />
+  );
+}
+if (showTrackToken) {
+  return (
+    <TrackToken onBack={() => setShowTrackToken(false)} />
+  );
+}
+
+if (showLiveQueue) {
+  return (
+    <LiveQueueBoard onBack={() => setShowLiveQueue(false)} />
   );
 }
 
@@ -38,6 +54,19 @@ if (showJoin) {
   onClick={() => setShowDashboard(true)}
 >
   Live dashboard <span>↗</span>
+</button>
+<button
+  className="nav-button"
+  onClick={() => setShowTrackToken(true)}
+>
+  Track token <span>↗</span>
+</button>
+
+<button
+  className="nav-button"
+  onClick={() => setShowLiveQueue(true)}
+>
+  Live Queue Board <span>↗</span>
 </button>
       </nav>
 
