@@ -1,5 +1,6 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { socket } from "../socket";
 
 const API = "http://localhost:3000/api";
 
@@ -8,40 +9,51 @@ export default function LiveQueueBoard({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch live queue data from the backend
+  const loadQueue = useCallback(async () => {
+    try {
+      const response = await fetch(`${API}/tokens`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setTokens(data.tokens || []);
+        console.log("Tokens received by React:", data.tokens.length);
+console.log("Latest tokens:", data.tokens.slice(-2));
+        setError("");
+      } else {
+        setError(data.message || "Could not load live queues.");
+      }
+    } catch {
+      setError("Unable to connect to the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Listen for real-time updates and keep a fallback refresh
   useEffect(() => {
     let active = true;
 
-    async function loadQueue() {
-      try {
-        const response = await fetch(`${API}/tokens`);
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Unable to load queues.");
-        }
-
-        if (active) {
-          setTokens(data.tokens || []);
-          setError("");
-        }
-      } catch {
-        if (active) {
-          setError("Unable to connect. Please check the backend.");
-        }
-      } finally {
-        if (active) setLoading(false);
+    const handleQueueUpdate = () => {
+      if (active) {
+        loadQueue();
       }
-    }
+    };
 
     loadQueue();
+
+    socket.on("queue-updated", handleQueueUpdate);
+
     const timer = setInterval(loadQueue, 5000);
 
     return () => {
       active = false;
+      socket.off("queue-updated", handleQueueUpdate);
       clearInterval(timer);
     };
-  }, []);
+  }, [loadQueue]);
 
+  // Group tokens by service and location
   const queues = Object.values(
     tokens.reduce((groups, token) => {
       const key = `${token.serviceId}-${token.location}`;
@@ -66,16 +78,19 @@ export default function LiveQueueBoard({ onBack }) {
         <button className="back-button" onClick={onBack}>
           ← QueueLess
         </button>
+
         <span className="join-brand">Live Queue Board</span>
-        <span className="join-step-label">Refreshes every 5 sec</span>
+        <span className="join-step-label">Real-time updates</span>
       </nav>
 
       <main className="dashboard-main">
         <section className="dashboard-heading">
           <p className="join-eyebrow">LIVE QUEUE STATUS</p>
+
           <h1>
             Every queue, <span>at a glance.</span>
           </h1>
+
           <p>
             See the token being served, who's waiting, and who's next.
           </p>
@@ -116,6 +131,7 @@ export default function LiveQueueBoard({ onBack }) {
                 key={`${queue.serviceId}-${queue.location}`}
               >
                 <span className="step-number">LIVE QUEUE</span>
+
                 <h3>{queue.serviceName}</h3>
                 <p>{queue.location}</p>
 
@@ -131,6 +147,7 @@ export default function LiveQueueBoard({ onBack }) {
                     <span className="small-label">WAITING</span>
                     <strong>{waiting.length}</strong>
                   </div>
+
                   <div>
                     <span className="small-label">NEXT TOKEN</span>
                     <strong>{next?.tokenNumber || "—"}</strong>
@@ -146,19 +163,21 @@ export default function LiveQueueBoard({ onBack }) {
                   {waiting.length === 0 ? (
                     <p>No customers waiting.</p>
                   ) : (
-                    waiting.slice(0, 5).map((token) => (
+                    waiting.map((token) => (
                       <p key={token._id || token.id}>
                         <strong>{token.tokenNumber}</strong>
                         {" · "}
-                        Position {token.peopleAhead + 1}
+                        Position {(token.peopleAhead ?? 0) + 1}
                         {" · "}
-                        {token.estimatedWait} min
+                        {token.estimatedWait ?? 0} min
                       </p>
                     ))
                   )}
 
                   {waiting.length > 5 && (
-                    <p>And {waiting.length - 5} more waiting...</p>
+                    <p>
+                      And {waiting.length - 5} more waiting...
+                    </p>
                   )}
                 </div>
               </article>

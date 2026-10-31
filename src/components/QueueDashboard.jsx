@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
+import { socket } from "../socket";
 
 const API = "http://localhost:3000/api";
 
@@ -13,7 +14,7 @@ const [selectedLocation, setSelectedLocation] = useState("all");
 
   const loadTokens = useCallback(async () => {
     try {
-      const response = await fetch(`${API}/tokens`);
+      const response = await fetch(`${API}/tokens/staff`);
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -29,11 +30,23 @@ const [selectedLocation, setSelectedLocation] = useState("all");
     }
   }, []);
 
-  useEffect(() => {
+  
+useEffect(() => {
+  loadTokens();
+
+  const handleQueueUpdate = () => {
     loadTokens();
-    const timer = setInterval(loadTokens, 5000);
-    return () => clearInterval(timer);
-  }, [loadTokens]);
+  };
+
+  socket.on("queue-updated", handleQueueUpdate);
+
+  const timer = setInterval(loadTokens, 5000);
+
+  return () => {
+    socket.off("queue-updated", handleQueueUpdate);
+    clearInterval(timer);
+  };
+}, [loadTokens]);
 
   async function updateStatus(token, status) {
     setUpdating(token.id);

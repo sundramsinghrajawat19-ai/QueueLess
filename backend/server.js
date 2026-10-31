@@ -1,10 +1,28 @@
 
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PATCH"]
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("A client connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("A client disconnected:", socket.id);
+  });
+});
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -20,6 +38,7 @@ const services = [
 
 // MongoDB token model
 const tokenSchema = new mongoose.Schema({
+  calledAt: { type: Date, default: null },
   id: { type: Number, required: true, unique: true },
   tokenNumber: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -115,6 +134,12 @@ app.post("/api/tokens", async (req, res) => {
       estimatedWait: peopleAhead * service.waitTime,
       status: "waiting"
     });
+    await token.save();
+await refreshQueue(cleanLocation, service.id);
+    io.emit("queue-updated", {
+  location: cleanLocation,
+  serviceId: service.id,
+});
 
     res.status(201).json({
       success: true,
@@ -151,6 +176,29 @@ app.get("/api/tokens", async (req, res) => {
     });
   }
 });
+
+
+app.get("/api/tokens/staff", async (req, res) => {
+  try {
+    const tokens = await Token.find()
+      .select(
+        "id tokenNumber name location serviceId serviceName peopleAhead estimatedWait status createdAt"
+      )
+      .sort({ id: 1 })
+      .lean();
+
+    res.json({ success: true, tokens });
+  } catch (error) {
+    console.error("Fetching staff tokens failed:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Could not fetch staff queue tokens."
+    });
+  }
+});
+
+
+
 
 
 /* Find one token for customer tracking */
@@ -204,9 +252,24 @@ app.get("/api/tokens/track/:tokenNumber", async (req, res) => {
 });
 
 
+
 async function refreshQueue(location, serviceId) {
   const service = services.find(item => item.id === serviceId);
   if (!service) return;
+
+  const calledToken = await Token.findOne({
+  location,
+  serviceId,
+  status: "called"
+}).sort({ calledAt: 1 });
+
+const remainingTime = calledToken
+  ? Math.max(
+      0,
+      service.waitTime -
+      Math.floor((Date.now() - calledToken.calledAt.getTime()) / 60000)
+    )
+  : 0;
 
   const waitingTokens = await Token.find({
     location,
@@ -223,12 +286,13 @@ async function refreshQueue(location, serviceId) {
       {
         $set: {
           peopleAhead: i,
-          estimatedWait: i * service.waitTime
+          estimatedWait: remainingTime + (i * service.waitTime)
         }
       }
     );
   }
 }
+
 
 app.patch("/api/tokens/:id/status", async (req, res) => {
   try {
@@ -267,9 +331,22 @@ app.patch("/api/tokens/:id/status", async (req, res) => {
     }
 
     token.status = status;
-    await token.save();
+
+if (status === "called") {
+  token.calledAt = new Date();
+}
+
+if (status === "completed") {
+  token.calledAt = null;
+}
+
+await token.save();
 
     await refreshQueue(token.location, token.serviceId);
+    io.emit("queue-updated", {
+  location: token.location,
+  serviceId: token.serviceId,
+});
 
     res.json({
       success: true,
@@ -286,16 +363,19 @@ app.patch("/api/tokens/:id/status", async (req, res) => {
   }
 });
 
+
 // Connect to MongoDB before accepting requests
+
 async function startServer() {
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI is missing from backend/.env");
   }
 
   await mongoose.connect(process.env.MONGODB_URI);
+
   console.log("MongoDB connected to QueueLess!");
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`QueueLess backend running at http://localhost:${PORT}`);
   });
 }
@@ -304,3 +384,4 @@ startServer().catch(error => {
   console.error("Backend startup failed:", error.message);
   process.exit(1);
 });
+

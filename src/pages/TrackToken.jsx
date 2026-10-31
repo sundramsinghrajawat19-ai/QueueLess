@@ -1,4 +1,4 @@
-
+import { socket } from "../socket";
 import { useEffect, useState } from "react";
 
 const API = "http://localhost:3000/api";
@@ -43,29 +43,54 @@ export default function TrackToken({ onBack }) {
     }
   }
 
-  useEffect(() => {
-    if (!trackingNumber) return;
+  
 
-    const timer = setInterval(async () => {
-      try {
-        const response = await fetch(
-          `${API}/tokens/track/${encodeURIComponent(trackingNumber)}`
-        );
-        const data = await response.json();
+useEffect(() => {
+  if (!trackingNumber) return;
 
-        if (response.ok && data.success) {
-          setToken(data.token);
-          setError("");
-        } else {
-          setError(data.message || "Could not refresh token information.");
-        }
-      } catch {
+  let active = true;
+
+  async function loadToken() {
+    try {
+      const response = await fetch(
+        `${API}/tokens/track/${encodeURIComponent(trackingNumber)}`
+      );
+      const data = await response.json();
+
+      if (!active) return;
+
+      if (response.ok && data.success) {
+        setToken(data.token);
+        setError("");
+      } else {
+        setError(data.message || "Could not refresh token information.");
+      }
+    } catch {
+      if (active) {
         setError("Connection lost. Retrying automatically...");
       }
-    }, 5000);
+    }
+  }
 
-    return () => clearInterval(timer);
-  }, [trackingNumber]);
+  const handleQueueUpdate = () => {
+    if (active) {
+      loadToken();
+    }
+  };
+
+  loadToken();
+
+  socket.on("queue-updated", handleQueueUpdate);
+
+  const timer = setInterval(loadToken, 5000);
+
+  return () => {
+    active = false;
+    socket.off("queue-updated", handleQueueUpdate);
+    clearInterval(timer);
+  };
+}, [trackingNumber]);
+
 
   return (
     <div className="dashboard-page">
