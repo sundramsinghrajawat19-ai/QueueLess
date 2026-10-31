@@ -4,6 +4,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("./User");
 require("dotenv").config();
 
 const app = express();
@@ -27,6 +30,166 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Login required."
+    });
+  }
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token."
+    });
+  }
+}
+
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to perform this action."
+      });
+    }
+
+    next();
+  };
+}
+
+function createAuthToken(user) {
+  return jwt.sign(
+    {
+      userId: user._id,
+      role: user.role
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
+// Customer registration
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      password.length < 8
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, valid email, and password of at least 8 characters are required."
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists."
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: "customer"
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Customer account created successfully.",
+      token: createAuthToken(user),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Registration failed:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not create account."
+    });
+  }
+});
+
+// Login for customers and staff
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required."
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase()
+    });
+
+    if (
+      !user ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Login successful.",
+      token: createAuthToken(user),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Login failed:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not log in."
+    });
+  }
+});
+
 
 // Available services
 const services = [
@@ -178,7 +341,11 @@ app.get("/api/tokens", async (req, res) => {
 });
 
 
-app.get("/api/tokens/staff", async (req, res) => {
+app.get(
+  "/api/tokens/staff",
+  authenticateToken,
+  requireRole("staff", "admin"),
+  async (req, res) => {
   try {
     const tokens = await Token.find()
       .select(
@@ -294,7 +461,11 @@ const remainingTime = calledToken
 }
 
 
-app.patch("/api/tokens/:id/status", async (req, res) => {
+app.patch(
+  "/api/tokens/:id/status",
+  authenticateToken,
+  requireRole("staff", "admin"),
+  async (req, res) => {
   try {
     const { status } = req.body;
 

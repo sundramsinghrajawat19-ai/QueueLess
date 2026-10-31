@@ -1,4 +1,4 @@
-
+import Login from "./pages/Login";
 import QueueDashboard from "./components/QueueDashboard";
 import { useState } from "react";
 import "./index.css";
@@ -7,6 +7,8 @@ import TrackToken from "./pages/TrackToken";
 import LiveQueueBoard from "./pages/LiveQueueBoard";
 
 function App() {
+  const [showLogin, setShowLogin] = useState(false);
+const [loggedInUser, setLoggedInUser] = useState(null);
   const [joined, setJoined] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
@@ -32,6 +34,17 @@ if (showLiveQueue) {
 if (showJoin) {
   return <JoinQueue onBack={() => setShowJoin(false)} />;
 }
+if (showLogin) {
+  return (
+    <Login
+      onBack={() => setShowLogin(false)}
+      onLogin={(user) => {
+        setLoggedInUser(user);
+        setShowLogin(false);
+      }}
+    />
+  );
+}
 
   return (
     <div className="app">
@@ -48,6 +61,12 @@ if (showJoin) {
 
         <button onClick={() => setShowJoin(true)}>
   Join a queue
+</button>
+<button
+  className="nav-button"
+  onClick={() => setShowLogin(true)}
+>
+  Login
 </button>
 <button
   className="nav-button"

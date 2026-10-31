@@ -1209,3 +1209,92 @@ footer p, footer > span { color: #817b91; font-size: 10px; margin: 0; }
   }
 }
 
+.login-page {
+  min-height: 75vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: #111329;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.login-card h1 {
+  margin: 12px 0;
+  font-size: 32px;
+}
+
+.login-card h1 span {
+  color: #a78bfa;
+}
+
+.login-card > p {
+  color: #a4a5bd;
+}
+
+.login-role {
+  display: flex;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.login-role button {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #343653;
+  border-radius: 10px;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+.login-role button.selected {
+  background: #6d4aff;
+  border-color: #6d4aff;
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card label {
+  color: #d8d8e8;
+  font-size: 14px;
+}
+
+.login-card input {
+  padding: 14px;
+  border: 1px solid #343653;
+  border-radius: 10px;
+  background: #0b0c20;
+  color: white;
+  font: inherit;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.login-message {
+  color: #ff8585;
+  font-size: 14px;
+}
+
+.login-note {
+  margin-top: 20px;
+  font-size: 13px;
+  text-align: center;
+}
+
