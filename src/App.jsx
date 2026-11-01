@@ -5,6 +5,7 @@ import "./index.css";
 import JoinQueue from "./pages/JoinQueue";
 import TrackToken from "./pages/TrackToken";
 import LiveQueueBoard from "./pages/LiveQueueBoard";
+import MyQueue from "./pages/MyQueue";
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -17,6 +18,7 @@ const [loggedInUser, setLoggedInUser] = useState(() => {
   const [showDashboard, setShowDashboard] = useState(false);
   const [showTrackToken, setShowTrackToken] = useState(false);
   const [showLiveQueue, setShowLiveQueue] = useState(false);
+  const [showMyQueue, setShowMyQueue] = useState(false);
   useEffect(() => {
   if (
     loggedInUser &&
@@ -39,6 +41,12 @@ if (showTrackToken) {
 if (showLiveQueue) {
   return (
     <LiveQueueBoard onBack={() => setShowLiveQueue(false)} />
+  );
+}
+
+if (showMyQueue) {
+  return (
+    <MyQueue onBack={() => setShowMyQueue(false)} />
   );
 }
 
@@ -99,6 +107,14 @@ if (showLogin) {
 >
   {loggedInUser ? "Logout" : "Login"}
 </button>
+{loggedInUser?.role === "customer" && (
+  <button
+    className="nav-button"
+    onClick={() => setShowMyQueue(true)}
+  >
+    My Queue <span>↗</span>
+  </button>
+)}
 <button
   className="nav-button"
   onClick={() => setShowDashboard(true)}

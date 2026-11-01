@@ -42,18 +42,22 @@ export default function JoinQueue({ onBack }) {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/tokens",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: name.trim(),
-            location,
-            serviceId,
-          }),
-        }
-      );
+      const authToken = localStorage.getItem("queuelessToken");
+
+const response = await fetch(
+  "http://localhost:3000/api/tokens",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({
+      location,
+      serviceId,
+    }),
+  }
+);
 
       const data = await response.json();
 

@@ -201,6 +201,11 @@ const services = [
 
 // MongoDB token model
 const tokenSchema = new mongoose.Schema({
+  customerId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: false
+},
   calledAt: { type: Date, default: null },
   id: { type: Number, required: true, unique: true },
   tokenNumber: { type: String, required: true, unique: true },
@@ -241,20 +246,34 @@ app.get("/api/services", (req, res) => {
 });
 
 // Generate a queue token
-app.post("/api/tokens", async (req, res) => {
+app.post(
+  "/api/tokens",
+  authenticateToken,
+  requireRole("customer"),
+  async (req, res) => {
   try {
-    const { name, location, serviceId } = req.body;
+    const { location, serviceId } = req.body;
+
+const customer = await User.findById(req.user.userId);
+
+if (!customer || customer.role !== "customer") {
+  return res.status(401).json({
+    success: false,
+    message: "Customer account not found. Please log in again.",
+  });
+}
+
+const name = customer.name;
 
     if (
-      typeof name !== "string" || !name.trim() ||
-      typeof location !== "string" || !location.trim() ||
-      serviceId === undefined || serviceId === null || serviceId === ""
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, location, and service are required."
-      });
-    }
+  typeof location !== "string" || !location.trim() ||
+  serviceId === undefined || serviceId === null || serviceId === ""
+) {
+  return res.status(400).json({
+    success: false,
+    message: "Location and service are required."
+  });
+}
 
     const service = services.find(
       item => item.id === Number(serviceId)
@@ -288,8 +307,10 @@ app.post("/api/tokens", async (req, res) => {
 
     const token = await Token.create({
       id: counter.seq,
+      
       tokenNumber: `Q${String(counter.seq).padStart(3, "0")}`,
       name: name.trim(),
+      customerId: customer._id,
       location: cleanLocation,
       serviceId: service.id,
       serviceName: service.name,
@@ -317,7 +338,35 @@ await refreshQueue(cleanLocation, service.id);
     });
   }
 });
+// Get tokens belonging to the logged-in customer
+app.get(
+  "/api/tokens/my",
+  authenticateToken,
+  requireRole("customer"),
+  async (req, res) => {
+    try {
+      const tokens = await Token.find({
+        customerId: req.user.userId,
+      })
+        .select(
+          "id tokenNumber location serviceId serviceName peopleAhead estimatedWait status createdAt"
+        )
+        .sort({ createdAt: -1 });
 
+      res.json({
+        success: true,
+        tokens,
+      });
+    } catch (error) {
+      console.error("Customer tokens fetch failed:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Could not fetch your queue tokens.",
+      });
+    }
+  }
+);
 
  // Get queue information without exposing customer names
 
