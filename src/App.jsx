@@ -1,6 +1,6 @@
 import Login from "./pages/Login";
 import QueueDashboard from "./components/QueueDashboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./index.css";
 import JoinQueue from "./pages/JoinQueue";
 import TrackToken from "./pages/TrackToken";
@@ -8,12 +8,23 @@ import LiveQueueBoard from "./pages/LiveQueueBoard";
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
-const [loggedInUser, setLoggedInUser] = useState(null);
+const [loggedInUser, setLoggedInUser] = useState(() => {
+  const savedUser = localStorage.getItem("queuelessUser");
+  return savedUser ? JSON.parse(savedUser) : null;
+});
   const [joined, setJoined] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showTrackToken, setShowTrackToken] = useState(false);
   const [showLiveQueue, setShowLiveQueue] = useState(false);
+  useEffect(() => {
+  if (
+    loggedInUser &&
+    (loggedInUser.role === "staff" || loggedInUser.role === "admin")
+  ) {
+    setShowDashboard(true);
+  }
+}, [loggedInUser]);
   if (showDashboard) {
   return (
     <QueueDashboard onBack={() => setShowDashboard(false)} />
@@ -39,9 +50,13 @@ if (showLogin) {
     <Login
       onBack={() => setShowLogin(false)}
       onLogin={(user) => {
-        setLoggedInUser(user);
-        setShowLogin(false);
-      }}
+  setLoggedInUser(user);
+  setShowLogin(false);
+
+  if (user.role === "staff" || user.role === "admin") {
+    setShowDashboard(true);
+  }
+}}
     />
   );
 }
@@ -64,9 +79,25 @@ if (showLogin) {
 </button>
 <button
   className="nav-button"
-  onClick={() => setShowLogin(true)}
+  onClick={() => {
+    if (loggedInUser) {
+      localStorage.removeItem("queuelessToken");
+      localStorage.removeItem("queuelessUser");
+
+      setLoggedInUser(null);
+      setShowDashboard(false);
+      setShowJoin(false);
+      setShowTrackToken(false);
+      setShowLiveQueue(false);
+
+      // Open the login page after logout
+      setShowLogin(true);
+    } else {
+      setShowLogin(true);
+    }
+  }}
 >
-  Login
+  {loggedInUser ? "Logout" : "Login"}
 </button>
 <button
   className="nav-button"

@@ -1297,4 +1297,15 @@ footer p, footer > span { color: #817b91; font-size: 10px; margin: 0; }
   font-size: 13px;
   text-align: center;
 }
+.login-switch {
+  background: none;
+  border: none;
+  color: #8b5cf6;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
 
+.login-switch:hover {
+  text-decoration: underline;
+}

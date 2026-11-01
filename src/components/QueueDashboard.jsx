@@ -14,7 +14,13 @@ const [selectedLocation, setSelectedLocation] = useState("all");
 
   const loadTokens = useCallback(async () => {
     try {
-      const response = await fetch(`${API}/tokens/staff`);
+      const token = localStorage.getItem("queuelessToken");
+
+const response = await fetch(`${API}/tokens/staff`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -53,14 +59,19 @@ useEffect(() => {
     setError("");
 
     try {
-      const response = await fetch(
-        `${API}/tokens/${token.id}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status })
-        }
-      );
+      const authToken = localStorage.getItem("queuelessToken");
+
+const response = await fetch(
+  `${API}/tokens/${token.id}/status`,
+  {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`
+    },
+    body: JSON.stringify({ status })
+  }
+);
 
       const data = await response.json();
 
