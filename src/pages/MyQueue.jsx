@@ -5,40 +5,93 @@ export default function MyQueue({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  async function cancelToken(tokenId) {
+  const confirmCancel = window.confirm(
+    "Are you sure you want to cancel this token?"
+  );
+
+  if (!confirmCancel) return;
+
+  try {
+    const authToken = localStorage.getItem("queuelessToken");
+
+    const response = await fetch(
+      `http://localhost:3000/api/tokens/${tokenId}/cancel`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to cancel token.");
+    }
+
+    setTokens((currentTokens) =>
+  currentTokens.map((token) =>
+    token.id === tokenId
+      ? { ...token, status: "cancelled" }
+      : token
+  )
+);
+  } catch (err) {
+    alert(err.message);
+  }
+}
   useEffect(() => {
-    async function fetchMyTokens() {
-      try {
-        const authToken = localStorage.getItem("queuelessToken");
+  let isActive = true;
 
-        const response = await fetch(
-          "http://localhost:3000/api/tokens/my",
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          }
-        );
+  async function fetchMyTokens() {
+    try {
+      const authToken = localStorage.getItem("queuelessToken");
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load your queue.");
+      const response = await fetch(
+        "http://localhost:3000/api/tokens/my",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         }
+      );
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to load your queue.");
+      }
+
+      if (isActive) {
         setTokens(data.tokens || []);
-      } catch (err) {
+        setError("");
+      }
+    } catch (err) {
+      if (isActive) {
         setError(
           err.message === "Failed to fetch"
             ? "Cannot connect to the server. Please ensure the backend is running."
             : err.message
         );
-      } finally {
+      }
+    } finally {
+      if (isActive) {
         setLoading(false);
       }
     }
+  }
 
-    fetchMyTokens();
-  }, []);
+  fetchMyTokens();
+
+  const interval = setInterval(fetchMyTokens, 5000);
+
+  return () => {
+    isActive = false;
+    clearInterval(interval);
+  };
+}, []);
 
   return (
     <div className="join-page">
@@ -97,6 +150,15 @@ export default function MyQueue({ onBack }) {
                   <p>
                     <strong>Status:</strong> {token.status}
                   </p>
+
+                  {token.status === "waiting" && (
+  <button
+    className="back-button"
+    onClick={() => cancelToken(token.id)}
+  >
+    Cancel Token
+  </button>
+)}
                 </div>
               </div>
             </section>

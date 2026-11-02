@@ -200,9 +200,9 @@ const response = await fetch(
               </div>
 
               <p className="form-note">
-                This is a development queue. Tokens are temporarily
-                stored in server memory until MongoDB is connected.
-              </p>
+  Your token is saved. You can track your queue status
+  and estimated waiting time from My Queue.
+</p>
 
               <button
                 className="generate-token-button"

@@ -582,6 +582,55 @@ await token.save();
     });
   }
 });
+app.patch(
+  "/api/tokens/:id/cancel",
+  authenticateToken,
+  requireRole("customer"),
+  async (req, res) => {
+    try {
+      const token = await Token.findOne({
+        id: Number(req.params.id),
+        customerId: req.user.userId,
+      });
+
+      if (!token) {
+        return res.status(404).json({
+          success: false,
+          message: "Token not found.",
+        });
+      }
+
+      if (token.status !== "waiting") {
+        return res.status(400).json({
+          success: false,
+          message: "Only waiting tokens can be cancelled.",
+        });
+      }
+
+      token.status = "cancelled";
+      await token.save();
+
+      await refreshQueue(token.location, token.serviceId);
+
+      io.emit("queue-updated", {
+        location: token.location,
+        serviceId: token.serviceId,
+      });
+
+      res.json({
+        success: true,
+        message: "Token cancelled successfully.",
+      });
+    } catch (error) {
+      console.error("Token cancellation failed:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Could not cancel the token.",
+      });
+    }
+  }
+);
 
 
 // Connect to MongoDB before accepting requests
