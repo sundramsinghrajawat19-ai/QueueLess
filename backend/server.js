@@ -467,6 +467,144 @@ app.get("/api/tokens/track/:tokenNumber", async (req, res) => {
   }
 });
 
+app.post("/api/ai/public-chat", async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({
+        success: false,
+        message: "AI assistant is not configured."
+      });
+    }
+
+    const message = req.body.message?.trim();
+
+    if (!message || message.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a message of up to 500 characters."
+      });
+    }
+
+    const { GoogleGenAI } = await import("@google/genai");
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: `
+You are QueueLess AI, a friendly assistant on the QueueLess
+digital queue management website.
+
+Help visitors understand:
+- How QueueLess works
+- How to join a digital queue
+- How to track a token
+- How queue positions and estimated waiting times work
+- General questions about digital queue management
+
+Rules:
+- Answer in simple, friendly language.
+- Keep responses concise.
+- Do not invent live queue positions or waiting times.
+- Do not claim that a token has been created or cancelled.
+- Do not request passwords, OTPs, or payment details.
+- If asked about a personal token, explain that the user
+  should log in and check My Queue.
+- Only answer questions relevant to QueueLess or queue management.
+
+Visitor question: ${message}
+`
+    });
+
+    res.json({
+      success: true,
+      reply: response.text
+    });
+  } catch (error) {
+    console.error("Public AI chat error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "The AI assistant could not respond. Please try again."
+    });
+  }
+});
+
+
+app.post("/api/ai/chat", authenticateToken, requireRole("customer"), async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({
+        success: false,
+        message: "AI assistant is not configured."
+      });
+    }
+
+    const message = req.body.message?.trim();
+
+    if (!message || message.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a message of up to 500 characters."
+      });
+    }
+
+    // Get only this customer's queue tokens
+    const tokens = await Token.find({
+      customerId: req.user.userId
+    })
+      .select("tokenNumber serviceName status peopleAhead estimatedWait location")
+      .lean();
+
+    const queueContext = tokens.length
+      ? JSON.stringify(tokens)
+      : "This customer currently has no queue tokens.";
+
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: `
+You are QueueLess, a helpful queue management assistant.
+
+Help customers with queue-related questions and explain queue
+information in simple language.
+
+Use the following live queue data when answering questions about
+this customer's tokens:
+${queueContext}
+
+Rules:
+- Never invent queue positions, waiting times, or token details.
+- If the data does not contain an answer, say so clearly.
+- Do not reveal information about other customers.
+- You cannot create, cancel, or modify tokens.
+- Keep answers concise and friendly.
+
+Customer question: ${message}
+`
+    });
+
+    res.json({
+      success: true,
+      reply: response.text
+    });
+  } catch (error) {
+    console.error("AI chat error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "The AI assistant could not respond. Please try again."
+    });
+  }
+});
+
+
 
 
 async function refreshQueue(location, serviceId) {

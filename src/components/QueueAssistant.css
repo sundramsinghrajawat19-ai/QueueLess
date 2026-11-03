@@ -1,0 +1,136 @@
+
+.queue-assistant {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1000;
+  font-family: inherit;
+}
+
+.assistant-toggle {
+  background: linear-gradient(135deg, #7657f6, #5535d5);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 22px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(91, 57, 220, 0.35);
+}
+
+.assistant-panel {
+  width: 350px;
+  height: 450px;
+  max-height: 70vh;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #302c50;
+  border-radius: 18px;
+  background: #111124;
+  color: #f5f4ff;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+}
+
+.assistant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #1c1a36;
+  border-bottom: 1px solid #302c50;
+}
+
+.assistant-header div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assistant-header span {
+  font-size: 12px;
+  color: #aaa6c8;
+}
+
+.assistant-header button {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.assistant-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.assistant-message {
+  max-width: 85%;
+  padding: 11px 13px;
+  border-radius: 13px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.assistant-message.ai {
+  align-self: flex-start;
+  background: #24223e;
+  color: #e9e6ff;
+}
+
+.assistant-message.user {
+  align-self: flex-end;
+  background: #6547e8;
+  color: white;
+}
+
+.assistant-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #302c50;
+}
+
+.assistant-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #393654;
+  border-radius: 10px;
+  background: #1b1a30;
+  color: white;
+  outline: none;
+}
+
+.assistant-form button {
+  width: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #7657f6;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.assistant-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .queue-assistant {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .assistant-panel {
+    width: calc(100vw - 28px);
+  }
+}

@@ -6,6 +6,7 @@ import JoinQueue from "./pages/JoinQueue";
 import TrackToken from "./pages/TrackToken";
 import LiveQueueBoard from "./pages/LiveQueueBoard";
 import MyQueue from "./pages/MyQueue";
+import QueueAssistant from "./components/QueueAssistant";
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -289,6 +290,7 @@ if (showLogin) {
         <p>Less waiting. More living.</p>
         <span>© 2026 QueueLess · Project demo</span>
       </footer>
+      <QueueAssistant />
     </div>
   );
 }
