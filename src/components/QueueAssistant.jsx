@@ -14,11 +14,18 @@ function QueueAssistant() {
     }
   ]);
   const [loading, setLoading] = useState(false);
+function askQuickQuestion(question) {
+  setMessage(question);
 
-  async function sendMessage(e) {
-    e.preventDefault();
+  sendMessage({
+    preventDefault: () => {},
+    target: null
+  });
+}
+  async function sendMessage(e, quickQuestion = "") {
+  e?.preventDefault();
 
-    const question = message.trim();
+  const question = (quickQuestion || message).trim();
     if (!question || loading) return;
 
     setMessages((previous) => [
@@ -73,6 +80,27 @@ function QueueAssistant() {
           </div>
 
           <div className="assistant-messages">
+            {messages.length === 1 && (
+  <div className="assistant-quick-questions">
+    <p>Quick questions</p>
+
+    {[
+      "How do I join a queue?",
+      "Where can I track my token?",
+      "What if I miss my turn?",
+      "How can I reduce waiting time?"
+    ].map((question) => (
+      <button
+        key={question}
+        type="button"
+        onClick={() => sendMessage(null, question)}
+        disabled={loading}
+      >
+        {question}
+      </button>
+    ))}
+  </div>
+)}
             {messages.map((item, index) => (
               <div
                 key={index}
@@ -83,10 +111,15 @@ function QueueAssistant() {
             ))}
 
             {loading && (
-              <div className="assistant-message ai">
-                Thinking...
-              </div>
-            )}
+  <div className="assistant-message ai typing-indicator">
+    <span>QueueLess AI is typing</span>
+    <span className="typing-dots">
+      <span>.</span>
+      <span>.</span>
+      <span>.</span>
+    </span>
+  </div>
+)}
           </div>
 
           <form onSubmit={sendMessage} className="assistant-form">

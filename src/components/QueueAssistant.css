@@ -134,3 +134,73 @@
     width: calc(100vw - 28px);
   }
 }
+/* AI typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.85;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.typing-dots span {
+  animation: typingBounce 1.2s infinite;
+  font-weight: bold;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+.assistant-quick-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.assistant-quick-questions p {
+  margin: 0 0 4px;
+  color: #a5a5c8;
+  font-size: 12px;
+}
+
+.assistant-quick-questions button {
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.08);
+  color: #e5e1ff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s ease;
+}
+
+.assistant-quick-questions button:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.assistant-quick-questions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

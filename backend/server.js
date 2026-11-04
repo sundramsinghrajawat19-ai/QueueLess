@@ -467,21 +467,86 @@ app.get("/api/tokens/track/:tokenNumber", async (req, res) => {
   }
 });
 
+
 app.post("/api/ai/public-chat", async (req, res) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(503).json({
-        success: false,
-        message: "AI assistant is not configured."
-      });
-    }
-
     const message = req.body.message?.trim();
 
     if (!message || message.length > 500) {
       return res.status(400).json({
         success: false,
         message: "Please enter a message of up to 500 characters."
+      });
+    }
+
+    const question = message.toLowerCase();
+
+    // Built-in answers for common QueueLess questions
+    const faq = [
+      {
+        keywords: ["reduce waiting", "less waiting", "waiting time", "wait time"],
+        reply:
+          "To reduce waiting, join the digital queue early, check your live token position in My Queue, and arrive near your estimated turn. QueueLess shows estimated waiting times, but actual times can change."
+      },
+      {
+        keywords: ["join", "get token", "take token"],
+        reply:
+          "To join a queue, open QueueLess, select the service you need, and tap Join Queue. Your token and estimated waiting time will be displayed."
+      },
+      {
+        keywords: ["track", "token status", "my token", "position"],
+        reply:
+          "Log in to QueueLess and open My Queue to check your token, queue position, and estimated waiting time."
+      },
+      {
+        keywords: ["how does queueless work", "what is queueless", "about queueless"],
+        reply:
+          "QueueLess is a digital queue management system. It lets customers join a service queue, receive a token, and track their queue position and estimated waiting time without standing in a physical line."
+      },
+      {
+        keywords: ["cancel", "leave queue"],
+        reply:
+          "If you want to leave a queue, log in and open My Queue. Check your token's available options to cancel it."
+      },
+      {
+  keywords: ["turn is called", "token is called", "called my token"],
+  reply:
+    "When your token is called, follow the instructions shown by the service and proceed to the assigned counter. Keep an eye on your QueueLess status so you don't miss your turn."
+},
+{
+  keywords: ["late", "miss my turn", "missed my turn"],
+  reply:
+    "If you arrive late or miss your turn, contact the service staff. They can tell you whether your token can still be served or whether you need to join the queue again."
+},
+{
+  keywords: ["queue position", "people ahead", "place in queue"],
+  reply:
+    "Your queue position shows how many customers are ahead of you. Check My Queue for your latest position and estimated waiting time. These estimates can change as the queue moves."
+},
+{
+  keywords: ["what services", "available services", "which services"],
+  reply:
+    "QueueLess displays the services available at your selected location. Open the Join Queue page to see the services you can currently select."
+}
+    ];
+
+    const matchedFAQ = faq.find(item =>
+      item.keywords.some(keyword => question.includes(keyword))
+    );
+
+    if (matchedFAQ) {
+      return res.json({
+        success: true,
+        reply: matchedFAQ.reply
+      });
+    }
+
+    // Use Gemini for other relevant questions
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json({
+        success: true,
+        reply:
+          "I can help with joining a queue, tracking your token, and understanding waiting times. Try asking me one of those questions."
       });
     }
 
@@ -497,37 +562,29 @@ app.post("/api/ai/public-chat", async (req, res) => {
 You are QueueLess AI, a friendly assistant on the QueueLess
 digital queue management website.
 
-Help visitors understand:
-- How QueueLess works
-- How to join a digital queue
-- How to track a token
-- How queue positions and estimated waiting times work
-- General questions about digital queue management
+Answer only questions about QueueLess and digital queue management.
+Keep answers concise and friendly.
 
-Rules:
-- Answer in simple, friendly language.
-- Keep responses concise.
-- Do not invent live queue positions or waiting times.
-- Do not claim that a token has been created or cancelled.
-- Do not request passwords, OTPs, or payment details.
-- If asked about a personal token, explain that the user
-  should log in and check My Queue.
-- Only answer questions relevant to QueueLess or queue management.
+Never invent live queue positions, waiting times, or token details.
+Never claim to create, cancel, or modify tokens.
+Never request passwords, OTPs, or payment details.
+For personal token questions, direct users to log in and check My Queue.
 
 Visitor question: ${message}
 `
     });
 
-    res.json({
+    return res.json({
       success: true,
       reply: response.text
     });
   } catch (error) {
     console.error("Public AI chat error:", error.message);
 
-    res.status(500).json({
-      success: false,
-      message: "The AI assistant could not respond. Please try again."
+    return res.json({
+      success: true,
+      reply:
+        "I'm having trouble connecting to the AI service right now. I can still help with common questions: joining a queue, tracking your token, or understanding waiting times."
     });
   }
 });
@@ -567,28 +624,48 @@ app.post("/api/ai/chat", authenticateToken, requireRole("customer"), async (req,
       apiKey: process.env.GEMINI_API_KEY
     });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+    let response;
+
+const models = ["gemini-2.5-flash", "gemini-flash-latest"];
+
+for (const model of models) {
+  try {
+    response = await ai.models.generateContent({
+      model,
       contents: `
-You are QueueLess, a helpful queue management assistant.
+You are QueueLess AI, a friendly assistant on the QueueLess
+digital queue management website.
 
-Help customers with queue-related questions and explain queue
-information in simple language.
-
-Use the following live queue data when answering questions about
-this customer's tokens:
-${queueContext}
+Help visitors understand:
+- How QueueLess works
+- How to join a digital queue
+- How to track a token
+- How queue positions and estimated waiting times work
+- General questions about digital queue management
 
 Rules:
-- Never invent queue positions, waiting times, or token details.
-- If the data does not contain an answer, say so clearly.
-- Do not reveal information about other customers.
-- You cannot create, cancel, or modify tokens.
-- Keep answers concise and friendly.
+- Answer in simple, friendly language.
+- Keep responses concise.
+- Do not invent live queue positions or waiting times.
+- Do not claim that a token has been created or cancelled.
+- Do not request passwords, OTPs, or payment details.
+- If asked about a personal token, explain that the user
+  should log in and check My Queue.
+- Only answer questions relevant to QueueLess or queue management.
 
-Customer question: ${message}
+Visitor question: ${message}
 `
     });
+
+    break;
+  } catch (error) {
+    console.error(`Gemini model ${model} failed:`, error.message);
+
+    if (model === models[models.length - 1]) {
+      throw error;
+    }
+  }
+}
 
     res.json({
       success: true,
