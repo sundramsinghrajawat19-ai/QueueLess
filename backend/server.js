@@ -12,9 +12,14 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://queueless-frontend-7kda.onrender.com"
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PATCH"]
   }
 });
@@ -28,7 +33,7 @@ io.on("connection", (socket) => {
 });
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
