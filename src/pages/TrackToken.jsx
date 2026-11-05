@@ -1,8 +1,8 @@
 import { socket } from "../socket";
 import { useEffect, useState } from "react";
+import API_URL from "../api";
 
-const API = "http://localhost:3000/api";
-
+const API = `${API_URL}/api`;
 export default function TrackToken({ onBack }) {
   const [input, setInput] = useState("");
   const [token, setToken] = useState(null);

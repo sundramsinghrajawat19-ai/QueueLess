@@ -1,4 +1,5 @@
 import { useState } from "react";
+import API_URL from "../api";
 
 function Login({ onBack, onLogin }) {
   const [role, setRole] = useState("customer");
@@ -16,8 +17,8 @@ function Login({ onBack, onLogin }) {
 
     try {
       const endpoint = isRegister
-        ? "http://localhost:3000/api/auth/register"
-        : "http://localhost:3000/api/auth/login";
+  ? `${API_URL}/api/auth/register`
+  : `${API_URL}/api/auth/login`;
 
       const body = isRegister
         ? { name, email, password }

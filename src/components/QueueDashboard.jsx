@@ -1,8 +1,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { socket } from "../socket";
+import API_URL from "../api";
 
-const API = "http://localhost:3000/api";
+const API = `${API_URL}/api`;
 
 export default function QueueDashboard({ onBack }) {
   const [tokens, setTokens] = useState([]);

@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import "./QueueAssistant.css";
+import API_URL from "../api";
 
-const API = "http://localhost:3000";
-
+const API = API_URL;
 function QueueAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");

@@ -1,5 +1,8 @@
 
 import { useState } from "react";
+import API_URL from "../api";
+
+const API = `${API_URL}/api`;
 
 const services = [
   {
@@ -45,7 +48,7 @@ export default function JoinQueue({ onBack }) {
       const authToken = localStorage.getItem("queuelessToken");
 
 const response = await fetch(
-  "http://localhost:3000/api/tokens",
+  `${API_URL}/api/tokens`,
   {
     method: "POST",
     headers: {
