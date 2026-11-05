@@ -4,6 +4,7 @@ export default function MyQueue({ onBack }) {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notification, setNotification] = useState("");
 
   async function cancelToken(tokenId) {
   const confirmCancel = window.confirm(
@@ -65,9 +66,28 @@ export default function MyQueue({ onBack }) {
       }
 
       if (isActive) {
-        setTokens(data.tokens || []);
-        setError("");
-      }
+  const updatedTokens = data.tokens || [];
+
+  setTokens(updatedTokens);
+  setError("");
+
+  const approachingToken = updatedTokens.find(
+    (token) =>
+      token.status === "waiting" &&
+      token.peopleAhead > 0 &&
+      token.peopleAhead <= 3
+  );
+
+  if (approachingToken) {
+    setNotification(
+      `Your turn is approaching! Only ${approachingToken.peopleAhead} ${
+        approachingToken.peopleAhead === 1 ? "person" : "people"
+      } ahead of your token ${approachingToken.tokenNumber}.`
+    );
+  } else {
+    setNotification("");
+  }
+}
     } catch (err) {
       if (isActive) {
         setError(
@@ -117,6 +137,12 @@ export default function MyQueue({ onBack }) {
         {loading && <p>Loading your queue...</p>}
 
         {error && <p className="form-error">{error}</p>}
+        {notification && (
+  <div className="queue-notification">
+    <strong>QueueLess Update</strong>
+    <p>{notification}</p>
+  </div>
+)}
 
         {!loading && !error && tokens.length === 0 && (
           <section className="token-result">
